@@ -1,0 +1,18 @@
+﻿<Window x:Class="VisualiseurBD.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:VisualiseurBD"
+        mc:Ignorable="d"
+        Icon ="bdVlogo.png"
+        Title="BD Viewer"
+        KeyDown="Window_KeyDown">
+    <Grid>
+        <ScrollViewer x:Name="xScroll">
+            <Image x:Name="xImage"/>
+        </ScrollViewer>
+        <TextBlock x:Name="xIndex" HorizontalAlignment="Left" VerticalAlignment="Top" Background="White"/>
+        <TextBlock x:Name="xTimer" HorizontalAlignment="Right" VerticalAlignment="Top" Background="White"/>
+    </Grid>
+</Window>
