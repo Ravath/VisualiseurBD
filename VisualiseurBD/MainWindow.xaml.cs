@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -36,10 +37,12 @@ namespace VisualiseurBD {
         /// Dafault Randomizer.
         /// </summary>
         static Random _rand = new Random();
+
         /// <summary>
-        /// Task of the Course Timer.
+        /// Course manager.
+        /// Browses images with a timer for the purpose of drawing training.
         /// </summary>
-        private Task _courseTimer;
+        private Course _course;
 
         /// <summary>
         /// The pictures in the same folder than the current displayed picture.
@@ -64,7 +67,15 @@ namespace VisualiseurBD {
 			this.Height = SystemParameters.MaximizedPrimaryScreenHeight;
 			this.Left = -SystemParameters.ResizeFrameVerticalBorderWidth;
 			this.Top = 0;
+            this._course = new Course(this, xTimer);
 
+            // Load Course Config File
+            FileInfo exec = new FileInfo(Assembly.GetEntryAssembly().Location);
+            FileInfo configInfo = new FileInfo(exec.DirectoryName+"/course.csv");
+			if (configInfo.Exists)
+			    this._course.LoadFile(configInfo);
+
+			// Open files given in argument
 			foreach (string arg in Environment.GetCommandLineArgs()) {
 				if(arg == null)
 					continue;
@@ -74,8 +85,7 @@ namespace VisualiseurBD {
 						break;
 					}
 				}
-			}
-			;
+			};
 		}
 
 		private void Window_KeyDown( object sender, KeyEventArgs e ) {
@@ -111,7 +121,7 @@ namespace VisualiseurBD {
                     GoRandom();
                     break;
                 case Key.C://Start/Stop a 30m drawing course
-                    StartCourse();
+					_course.StartCourse();
                     break;
 				default:
 				break;
@@ -139,84 +149,11 @@ namespace VisualiseurBD {
             _currentPict = _rand.Next();
             _currentPict %= _picts.Count;
             ShowPicture(_picts[_currentPict]);
-        }
-        #endregion
+		}
+		#endregion
 
-        #region Course Timer
-        /// <summary>
-        /// Timer Thread manipulation flag
-        /// </summary>
-        private bool _courseContinue = true;
-        /// <summary>
-        /// Default Course steps
-        /// </summary>
-        private Tuple<int, int>[] _courseSteps = new Tuple<int, int>[]
-        {
-            // Duration // Number of occurences
-            Tuple.Create(30,10),    //30s * 10
-            Tuple.Create(60,5),     // 1m *  5
-            Tuple.Create(300,2),    // 5m *  2
-            Tuple.Create(600,1)     //10m *  1
-        };
-
-        private void StartCourse()
-        {
-            if (_courseTimer?.Status == TaskStatus.Running)
-            {
-                // Stop Course
-                _courseContinue = false;
-                xTimer.Visibility = Visibility.Hidden;
-            }
-            else
-            {
-                // Start Course
-                _courseContinue = true;
-                xTimer.Visibility = Visibility.Visible;
-                _courseTimer = Task.Run(() => CourseTiming());
-            }
-        }
-
-        private void CourseTiming()
-        {
-            foreach (var step in _courseSteps)
-            {
-                int stepTime = step.Item1;
-                int stepOccurence = step.Item2;
-                for (int j = stepOccurence; j > 0 && _courseContinue; j--)
-                {
-                    for (int i = stepTime; i > 0 && _courseContinue; i--)
-                    {
-                        // Update Displayed Timer
-                        xTimer.Dispatcher.Invoke(() =>
-                         {
-                             xTimer.Text = string.Format("{0} / {1} - {2}", i, stepTime, j);
-                         });
-
-                        // 1 second timer
-                        _courseTimer.Wait(1000);
-                    }
-
-                    // Next picture
-                    bool _prevVal = _autoAdjust;
-                    _autoAdjust = true;
-                    if (_courseContinue)
-                        Dispatcher.Invoke(() => GoNext());
-                    _autoAdjust = _prevVal;
-                }
-
-                if (!_courseContinue)
-                    break;
-            }
-
-            // END
-
-            // Hide Displayed Timer
-            xTimer.Dispatcher.Invoke(() => { xTimer.Visibility = Visibility.Hidden; });
-        }
-        #endregion
-
-        #region File Manipulation
-        public void GetFile()
+		#region File Manipulation
+		public void GetFile()
         {
             OpenFileDialog openFileDialog = new OpenFileDialog
             {
@@ -333,6 +270,21 @@ namespace VisualiseurBD {
                     return false;
             }
         }
+
+        public void Next(bool forceAutoAdjust)
+		{
+            if(forceAutoAdjust)
+            {
+			    bool _prevVal = _autoAdjust;
+			    _autoAdjust = true;
+			    Dispatcher.Invoke(() => GoNext());
+			    _autoAdjust = _prevVal;
+            }
+            else
+			{
+				Dispatcher.Invoke(() => GoNext());
+			}
+		}
         #endregion
     }
 }
